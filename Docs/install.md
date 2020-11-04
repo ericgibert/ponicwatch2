@@ -8,3 +8,9 @@ pip install beebotte
 
 - APScheduler (https://apscheduler.readthedocs.io/en/stable/)
 pip install apscheduler
+
+Python 3.8
+==========
+
+https://www.ramoonus.nl/2019/10/23/how-to-install-python-3-8-on-raspberry-pi/
+
