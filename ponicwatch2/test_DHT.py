@@ -6,11 +6,15 @@
 ############################################################
 
 import time
-import Adafruit_DHT
+import board
+import adafruit_dht
 from beebotte import *
 
 ### Replace API_KEY and SECRET_KEY with those of your account
-bbt = BBT('API_KEY', 'SECRET_KEY')
+with open("../Private/apikeys.txt", "rt") as fin:
+    API_KEY = fin.readline().strip()
+    SECRET_KEY = fin.readline().strip()
+bbt = BBT(API_KEY, SECRET_KEY)
 
 period = 60 ## Sensor data reporting period (1 minute)
 pin = 4 ## Assuming the DHT11 sensor is connected to GPIO pin number 4
@@ -19,12 +23,14 @@ pin = 4 ## Assuming the DHT11 sensor is connected to GPIO pin number 4
 temp_resource   = Resource(bbt, 'RaspberryPi', 'temperature')
 humid_resource  = Resource(bbt, 'RaspberryPi', 'humidity')
 
+dhtDevice = adafruit_dht.DHT22(board.D4)
+
 def run():
   while True:
     ### Assume
-    humidity, temperature = Adafruit_DHT.read_retry( Adafruit_DHT.DHT11, pin )
+    humidity, temperature = dhtDevice.temperature, dhtDevice.humidity
     if humidity is not None and temperature is not None:
-        print "Temp={0:f}*C  Humidity={1:f}%".format(temperature, humidity)
+        print("Temp={0:f}*C  Humidity={1:f}%").format(temperature, humidity)
         try:
           #Send temperature to Beebotte
           temp_resource.write(temperature)
@@ -32,9 +38,9 @@ def run():
           humid_resource.write(humidity)
         except Exception:
           ## Process exception here
-          print "Error while writing to Beebotte"
+          print("Error while writing to Beebotte")
     else:
-        print "Failed to get reading. Try again!"
+        print("Failed to get reading. Try again!")
 
     #Sleep some time
     time.sleep( period )
