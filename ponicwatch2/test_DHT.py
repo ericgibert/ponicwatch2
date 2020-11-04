@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+###  # ! /usr/bin/env python
 
 ############################################################
 # This code uses the Beebotte API, you must have an account.
@@ -20,17 +20,17 @@ period = 60 ## Sensor data reporting period (1 minute)
 pin = 4 ## Assuming the DHT11 sensor is connected to GPIO pin number 4
 
 ### Change channel name and resource names as suits you
-temp_resource   = Resource(bbt, 'RaspberryPi', 'temperature')
-humid_resource  = Resource(bbt, 'RaspberryPi', 'humidity')
+temp_resource   = Resource(bbt, 'Pilot', 'Air_Temperature')
+humid_resource  = Resource(bbt, 'Pilot', 'Air_Humidity')
 
-dhtDevice = adafruit_dht.DHT22(board.D4)
+dhtDevice = adafruit_dht.DHT22(board.D18)
 
 def run():
   while True:
     ### Assume
-    humidity, temperature = dhtDevice.temperature, dhtDevice.humidity
+    temperature, humidity  = dhtDevice.temperature, dhtDevice.humidity
     if humidity is not None and temperature is not None:
-        print("Temp={0:f}*C  Humidity={1:f}%").format(temperature, humidity)
+        print("Temp={0:f}*C  Humidity={1:f}%".format(temperature, humidity))
         try:
           #Send temperature to Beebotte
           temp_resource.write(temperature)
