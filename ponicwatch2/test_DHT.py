@@ -6,20 +6,29 @@
 ############################################################
 
 import time
-import board
-import adafruit_dht
+try:
+    import board
+    import adafruit_dht
+except NotImplementedError:
+    pass
 from beebotte import *
+from config import Config
 
 ### Replace API_KEY and SECRET_KEY with those of your account
-with open("../Private/apikeys.txt", "rt") as fin:
-    API_KEY = fin.readline().strip()
-    SECRET_KEY = fin.readline().strip()
-bbt = BBT(API_KEY, SECRET_KEY)
+# with open("../Private/apikeys.txt", "rt") as fin:
+#     API_KEY = fin.readline().strip()
+#     SECRET_KEY = fin.readline().strip()
+cfg =Config("../Private/config.txt")
+bbt = BBT(cfg["API_KEY"], cfg["SECRET_KEY"])
 
 period = 60 ## Sensor data reporting period (1 minute)
 pin = 4 ## Assuming the DHT11 sensor is connected to GPIO pin number 4
 
 ### Change channel name and resource names as suits you
+pilot = cfg["SYSTEMS"]["Pilot"]
+print(pilot)
+dht22 = pilot["DHT22"]
+print(board.D18)
 temp_resource   = Resource(bbt, 'Pilot', 'Air_Temperature')
 humid_resource  = Resource(bbt, 'Pilot', 'Air_Humidity')
 
