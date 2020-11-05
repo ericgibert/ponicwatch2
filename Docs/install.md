@@ -2,6 +2,7 @@ Based on libraries
 ==================
 - Adafruit CircuitPython Bundle (https://circuitpython.readthedocs.io/projects/bundle/en/latest/index.html)
 pip3 install adafruit-circuitpython-dht
+pip3 install adafruit-circuitpython-mcp230xx
 
 - https://beebotte.com/ponicwatch
 pip install beebotte
