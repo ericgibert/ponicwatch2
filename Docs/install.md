@@ -15,3 +15,6 @@ Python 3.8
 
 https://www.ramoonus.nl/2019/10/23/how-to-install-python-3-8-on-raspberry-pi/
 
+pip install pika
+
+

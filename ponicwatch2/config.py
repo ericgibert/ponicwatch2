@@ -4,7 +4,9 @@
  - list of the systems to control
 """
 from json import dump, load
+from dataclasses import dataclass
 
+@dataclass
 class Config():
 
     def __init__(self, filename):
@@ -22,6 +24,13 @@ class Config():
     def __getitem__(self, item):
         return self.data.get(item)
 
+    def __getattr__(self, key):
+        try:
+            return self.data.get(key)
+        except KeyError:
+            raise AttributeError(key)
+
+
 if __name__ == '__main__':
     cfg = Config("../Private/config.txt")
     # cfg.data["API_KEY"] = "api_key"
@@ -30,3 +39,5 @@ if __name__ == '__main__':
     cfg.save()
     print(cfg.data["API_KEY"])
     print(cfg["SECRET_KEY"])
+    print(cfg.SECRET_KEY)
+    print(cfg.rabbitmq["location"])
