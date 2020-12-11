@@ -1,0 +1,156 @@
+#!/bin/python3
+"""
+    Model for the table tb_log
+    Created by Eric Gibert on 2 May 2016
+
+    A log entry is created by a controller. The controller is identified by its name.
+    A controller might log various log type:
+    - SENSOR: log a sensor input/reading
+    - SWITCH: log a switch state (usually when there is a change of state)
+    - INFO: log an information message
+    - WARNING: log a warning message, action might be required by an operator
+    - ERROR: log an error message, an email should be trigger to raise an alarm to an operator
+"""
+from datetime import datetime, timezone, timedelta
+from model.model import Ponicwatch_Table
+
+class Ponicwatch_Log(Ponicwatch_Table):
+    """
+    Class to manage the table tb_log i.e. adding new record and retrieve exist ones
+    'object_id':
+        - When a Sensor or a Switch data is recorded then its id is used as 'object_id'
+        - When a message (info/warning/error) is recorded then an application id is given i.e. like an error code
+
+    The system name is provided when relevant (sensor, switch, other) or left empty if not relevant.
+
+    For Switches and Sensors:
+        - float_value: current value
+        - text_value: JSON representation of the object
+
+    For messages:
+        - float_value: relevant value like a threshold or -1.0 if not relevant
+        - text_value: message
+
+    'created_on": timestamp when the log record has been created. A log record cannot be updated.
+    """
+    META = {"table": "tb_log",
+            "id": "log_id",
+            "columns": (
+                            "log_id", # INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            "controller_name", # TEXT NOT NULL,
+                            "log_type", # TEXT NOT NULL,
+                            "object_id", # INTEGER NOT NULL,
+                            "system_name", # TEXT NOT NULL,
+                            "float_value", # REAL NOT NULL DEFAULT (0.0),
+                            "text_value", # TEXT,
+                            "created_on", # TIMESTAMP NOT NULL
+                        )
+            }
+
+    def __init__(self, controller, debug=False, db=None, *args, **kwargs):
+        super().__init__(db or controller.db, Ponicwatch_Log.META, *args, **kwargs)
+        self.debug = debug
+        self.controller_name = controller.name
+
+    @staticmethod
+    def json_exception(o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+
+    def add_log(self, log_type=None, system_name="", param=None):
+        """
+        Add an entry in tb_log.
+        :param log_type: optional, given for the message type (info, warning, error) else the param type will be used to find it
+        :param system_name: optional
+        :param param:
+            - message: a dictionary for { 'error_code', 'float_value', 'text_value' }
+            - switch/sensor: object itself to get its values as a JSON string
+        :return: log_id if INSERT is successful or None
+        """
+        # MESSAGE:
+        # log_type is mandatory to know the message level (info/warning/error)
+        # param is a dictionary
+        if log_type in ["INFO", "WARNING", "ERROR", "SCHEDULER"]:
+            self.insert(controller_name=self.controller_name,
+                        log_type=log_type,
+                        object_id=param["error_code"],
+                        system_name=system_name,
+                        float_value=param.get("float_value", -1.0),
+                        text_value=param["text_value"],
+                        created_on=datetime.now(timezone.utc)
+                        )
+            self.print_debug(log_type, param["error_code"], param.get("float_value", -1.0), param["text_value"])
+        else:
+            log_type = param.get("cls_name", param.__class__.__name__.upper())
+            try:
+                float_val = float(param["value"])
+            except (ValueError, TypeError) as err:
+                # if self.debug>=3:
+                #     print("Warning -1.23456789 in pw_log.py:", err)
+                float_val = -1.23456789
+            self.insert(controller_name=self.controller_name,
+                        log_type=log_type,
+                        object_id=param["id"],
+                        system_name=system_name,
+                        float_value=float_val,
+                        text_value="{} value: {}".format(str(param), param["value"]),
+                        created_on=datetime.now(timezone.utc)
+                        )
+            self.print_debug(log_type, param["value"], "\n", param)
+
+
+    def print_debug(self, msg, id, name, value=""):
+        """Helper function to print a debug message to console"""
+        if self.debug:
+            if msg.startswith("ERROR"): msg = "** %s *" % msg
+            print("{0:15} {1:10} {2:3} {3} {4}".format(datetime.now().strftime("%H:%M:%S.%f"), msg, id, name, value))
+
+    def add_info(self, msg, err_code=0, fval=0.0):
+        """Helper function for the controller to log an INFO message"""
+        self.add_log("INFO", self.controller_name, {'error_code': err_code, 'float_value': fval, 'text_value': msg})
+    def add_warning(self, msg, err_code=0, fval=0.0):
+        """Helper function for the controller to log a WARNING message"""
+        self.add_log("WARNING", self.controller_name, {'error_code': err_code, 'float_value': fval, 'text_value': msg})
+    def add_error(self, msg, err_code=0, fval=0.0):
+        """Helper function for the controller to log an ERROR message"""
+        self.add_log("ERROR", self.controller_name, {'error_code': err_code, 'float_value': fval, 'text_value': msg})
+
+    def reduce_size(self, keep_days=90):
+        """Delete all records above the number of days given as parameters"""
+        keep_from = datetime.now() - timedelta(days=keep_days)
+        nb_rows = self.execute_sql("delete from tb_log where created_on < ?", ("{:%Y-%m-%d}".format(keep_from), ))
+        self.execute_sql("vacuum")
+        return nb_rows
+
+    def __str__(self):
+        return "[{}] {}".format(self.controller_name, self["text_value"])
+
+if __name__ == "__main__":
+    # generates LOG entries to help testing the application
+    import sys
+    from random import randint
+    from model.pw_db import Ponicwatch_Db
+    db = Ponicwatch_Db("sqlite3", {'database': sys.argv[1]})
+    db.allow_close = False
+
+    class simulation(object):
+        def __init__(self, db):
+            self.db = db
+            self.name = "Controller SIMULATION"
+
+    simu = simulation(db)
+    logger = Ponicwatch_Log(simu)
+    # add an entry for the last 24h, every 10 minutes
+    created_on, end_time = datetime.now(timezone.utc) - timedelta(1), datetime.now(timezone.utc)
+    delta = timedelta(minutes=10)
+    while created_on <= end_time:
+        logger.insert(controller_name=simu.name,
+                      log_type="INFO", object_id=3,
+                      system_name="Atmosphere/Water Temperature",
+                      float_value= randint(20, 30),
+                      text_value="reading simulation",
+                      created_on=created_on)
+        created_on += delta
+
+    logger.reduce_size(keep_days=0)
+    db.close()
