@@ -140,3 +140,6 @@ dmypy.json
 cython_debug/
 
 Private/
+/ponicwatch2/ponicwatch.pid
+/ponicwatch2/*.db
+/ponicwatch2/images/

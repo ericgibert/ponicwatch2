@@ -31,7 +31,7 @@ from interrupt import Interrupt
 from http_view import http_view, get_image_file, one_pw_object_html, stop as bottle_stop, default as http_default
 from send_email import send_email
 
-__version__ = "2.20190409 Seattle"
+__version__ = "2.20201207 Nicole"
 __author__ = 'Eric Gibert'
 __license__ = 'MIT'
 

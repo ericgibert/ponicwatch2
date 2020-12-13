@@ -20,5 +20,10 @@ requirements.txt
     pip install pika
 - APScheduler (https://apscheduler.readthedocs.io/en/stable/)
     pip install apscheduler
+- Bottle:
+    pip install bottle
+- Bottle Session
+    pip install bottle-session
+    
 
 

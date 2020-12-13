@@ -12,6 +12,9 @@
     - ERROR: log an error message, an email should be trigger to raise an alarm to an operator
 """
 from datetime import datetime, timezone, timedelta
+from json import dumps as json_dumps
+import pika
+from rabbitmqlib import LOGQ, connect
 from model.model import Ponicwatch_Table
 
 class Ponicwatch_Log(Ponicwatch_Table):
